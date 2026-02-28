@@ -44,8 +44,7 @@ Aigis/
 ## Quickstart (Local, CPU)
 
 ```powershell
-$env:PYTHONPATH="C:\Users\krimo\OneDrive\Desktop\Aigis\src"
-C:\Users\krimo\AppData\Local\Python\pythoncore-3.14-64\python.exe -m uvicorn aigis.api.main:app --port 8000
+python.exe -m uvicorn aigis.api.main:app --port 8000
 ```
 
 Dashboard:
@@ -59,8 +58,8 @@ http://127.0.0.1:8000/v1/dashboard
 
 1) Start llama.cpp server (GPU suggested):
 ```powershell
-C:\Users\krimo\AppData\Local\Microsoft\WinGet\Packages\ggml.llamacpp_Microsoft.Winget.Source_8wekyb3d8bbwe\llama-server.exe \
-  -m C:\Users\krimo\OneDrive\Desktop\Aigis\models\qwen2.5-3b-instruct-q4_k_m.gguf \
+llama-server.exe \
+  -m Aigis\models\qwen2.5-3b-instruct-q4_k_m.gguf \
   --port 8080 --n-gpu-layers 35 --ctx-size 2048
 ```
 
@@ -69,8 +68,7 @@ C:\Users\krimo\AppData\Local\Microsoft\WinGet\Packages\ggml.llamacpp_Microsoft.W
 $env:AIGIS_LLM_ENABLED="true"
 $env:AIGIS_LLM_ENDPOINT="http://127.0.0.1:8080/v1/chat/completions"
 $env:AIGIS_LLM_MODEL="qwen2.5-3b-instruct"
-$env:PYTHONPATH="C:\Users\krimo\OneDrive\Desktop\Aigis\src"
-C:\Users\krimo\AppData\Local\Python\pythoncore-3.14-64\python.exe -m uvicorn aigis.api.main:app --port 8000
+python.exe -m uvicorn aigis.api.main:app --port 8000
 ```
 
 Check LLM health:
@@ -83,7 +81,7 @@ Invoke-WebRequest -Uri "http://127.0.0.1:8000/v1/llm/ping" -Headers @{ "x-api-ke
 ## Demo Script
 
 ```powershell
-C:\Users\krimo\AppData\Local\Python\pythoncore-3.14-64\python.exe C:\Users\krimo\OneDrive\Desktop\Aigis\scripts\demo_cli.py
+python.exe C:\Users\krimo\OneDrive\Desktop\Aigis\scripts\demo_cli.py
 ```
 
 ---
