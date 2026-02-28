@@ -1,0 +1,2 @@
+﻿# Optional ML dependencies for semantic detectors
+sentence-transformers>=2.6
