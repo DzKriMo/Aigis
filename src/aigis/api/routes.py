@@ -6,6 +6,10 @@ from typing import List, Dict, Any, Optional
 from ..auth.api_key import require_api_key
 from ..runtime.runner import GuardedRuntime
 from ..storage.store import InMemoryStore
+from ..policies.loader import save_policies
+from ..storage.registry import save_policies_to_db, save_tool_policies_to_db, load_tool_policies_from_db
+from ..runtime.tool_registry import get_all_tool_policies
+from ..config import settings
 
 router = APIRouter()
 store = InMemoryStore()
@@ -56,11 +60,25 @@ class ToolExecuteResponse(BaseModel):
     result: Optional[Dict[str, Any]] = None
     approval_hash: Optional[str] = None
 
+class PolicyUpdateRequest(BaseModel):
+    policies: List[Dict[str, Any]]
+
+class ToolPoliciesUpdateRequest(BaseModel):
+    tools: Dict[str, Dict[str, Any]]
+
 @router.post("/sessions", response_model=CreateSessionResponse, dependencies=[Depends(require_api_key)])
 def create_session():
     session_id = str(uuid4())
     store.create_session(session_id)
     return CreateSessionResponse(session_id=session_id)
+
+@router.get("/sessions", dependencies=[Depends(require_api_key)])
+def list_sessions():
+    sessions = store.list_sessions()
+    items = []
+    for sid, data in sessions.items():
+        items.append({"id": sid, "events": len(data.get("events", []))})
+    return {"sessions": items}
 
 @router.post("/sessions/{session_id}/messages", response_model=MessageResponse, dependencies=[Depends(require_api_key)])
 def send_message(session_id: str, req: MessageRequest):
@@ -117,3 +135,50 @@ def get_session(session_id: str):
     if not store.session_exists(session_id):
         raise HTTPException(status_code=404, detail="Session not found")
     return store.get_session(session_id)
+
+@router.get("/policies", dependencies=[Depends(require_api_key)])
+def get_policies():
+    return {"policies": runtime.policy_engine.policies}
+
+@router.put("/policies", dependencies=[Depends(require_api_key)])
+def update_policies(req: PolicyUpdateRequest):
+    if settings.aigis_db_enabled:
+        try:
+            from ..storage.db import run_async
+            run_async(save_policies_to_db(req.policies))
+        except Exception as exc:
+            raise HTTPException(status_code=500, detail=f"DB save failed: {exc}")
+    else:
+        save_policies(req.policies)
+    runtime.reload_policies()
+    return {"ok": True, "count": len(req.policies)}
+
+@router.get("/tool-policies", dependencies=[Depends(require_api_key)])
+def get_tool_policies():
+    if settings.aigis_db_enabled:
+        try:
+            from ..storage.db import run_async
+            tools = run_async(load_tool_policies_from_db())
+            return {"tools": tools}
+        except Exception as exc:
+            raise HTTPException(status_code=500, detail=f"DB load failed: {exc}")
+    tools = {}
+    for name, t in get_all_tool_policies().items():
+        tools[name] = {
+            "allowed_envs": t.allowed_envs,
+            "allowlist": t.allowlist,
+            "timeout_seconds": t.timeout_seconds,
+            "max_bytes": t.max_bytes,
+        }
+    return {"tools": tools}
+
+@router.put("/tool-policies", dependencies=[Depends(require_api_key)])
+def update_tool_policies(req: ToolPoliciesUpdateRequest):
+    if not settings.aigis_db_enabled:
+        raise HTTPException(status_code=501, detail="Tool policy editing requires DB")
+    try:
+        from ..storage.db import run_async
+        run_async(save_tool_policies_to_db(req.tools))
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"DB save failed: {exc}")
+    return {"ok": True, "count": len(req.tools)}

@@ -63,3 +63,7 @@ def get_tool_policy(name: str) -> Optional[ToolPolicy]:
         except Exception:
             pass
     return _TOOLS.get(name)
+
+
+def get_all_tool_policies() -> Dict[str, ToolPolicy]:
+    return _TOOLS

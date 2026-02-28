@@ -1,5 +1,7 @@
 ﻿from typing import Dict, Any
 
+from ..telemetry.collector import emit
+
 class InMemoryStore:
     def __init__(self):
         self.sessions: Dict[str, Dict[str, Any]] = {}
@@ -16,6 +18,7 @@ class InMemoryStore:
 
     def log_event(self, session_id: str, event: Dict[str, Any]):
         self.sessions[session_id]["events"].append(event)
+        emit({"session_id": session_id, **event})
 
     def add_pending_approval(self, session_id: str, approval_hash: str):
         self.sessions[session_id]["pending_approvals"].add(approval_hash)
@@ -33,3 +36,6 @@ class InMemoryStore:
 
     def get_session(self, session_id: str) -> Dict[str, Any]:
         return self.sessions.get(session_id, {})
+
+    def list_sessions(self) -> Dict[str, Dict[str, Any]]:
+        return self.sessions

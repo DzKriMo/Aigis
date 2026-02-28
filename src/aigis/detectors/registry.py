@@ -9,6 +9,7 @@ from .simple import (
     detect_jailbreak,
     detect_data_leakage,
 )
+from .llm_client import classify_text
 
 class DetectorRegistry:
     def __init__(self, detectors: Dict[str, Callable[[str, Dict], bool]]):
@@ -31,4 +32,7 @@ class DetectorRegistry:
         fn = self.detectors.get(name)
         if not fn:
             return False
+        # LLM classification (optional) merged into context cache
+        if "llm_classification" not in context:
+            context["llm_classification"] = classify_text(text)
         return fn(text, context)

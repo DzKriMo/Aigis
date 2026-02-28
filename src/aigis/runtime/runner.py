@@ -154,6 +154,9 @@ class GuardedRuntime:
             metadata={},
         )
 
+    def reload_policies(self):
+        self.policy_engine = PolicyEngine(load_policies())
+
     def handle_tool_call(
         self,
         session_id: str,

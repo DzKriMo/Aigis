@@ -1,5 +1,38 @@
-﻿from fastapi import FastAPI
+﻿from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
+import time
+import json
+
 from .api.routes import router
+from .api.dashboard import router as dashboard_router
+from .api.health import router as health_router
+from .config import settings
 
 app = FastAPI(title="Aigis", version="0.1.0")
+
+# CORS (demo-friendly)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"] ,
+    allow_headers=["*"],
+)
+
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    start = time.time()
+    response = await call_next(request)
+    duration = time.time() - start
+    print(json.dumps({
+        "ts": time.time(),
+        "path": request.url.path,
+        "method": request.method,
+        "status": response.status_code,
+        "duration_ms": int(duration * 1000),
+    }))
+    return response
+
 app.include_router(router, prefix="/v1")
+app.include_router(dashboard_router, prefix="/v1")
+app.include_router(health_router, prefix="/v1")

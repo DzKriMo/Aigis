@@ -56,24 +56,29 @@ def _match_any(patterns, text: str) -> bool:
 
 def detect_prompt_injection(text: str, context: Dict) -> bool:
     matcher = SemanticMatcher.from_env()
-    return _match_any(INJECTION_PATTERNS, text) or matcher.match("prompt_injection", text)
+    llm = context.get("llm_classification", {})
+    return _match_any(INJECTION_PATTERNS, text) or matcher.match("prompt_injection", text) or llm.get("prompt_injection", False)
 
 
 def detect_jailbreak(text: str, context: Dict) -> bool:
     matcher = SemanticMatcher.from_env()
-    return _match_any(JAILBREAK_PATTERNS, text) or matcher.match("jailbreak", text)
+    llm = context.get("llm_classification", {})
+    return _match_any(JAILBREAK_PATTERNS, text) or matcher.match("jailbreak", text) or llm.get("jailbreak", False)
 
 
 def detect_pii(text: str, context: Dict) -> bool:
-    return _match_any(PII_PATTERNS, text)
+    llm = context.get("llm_classification", {})
+    return _match_any(PII_PATTERNS, text) or llm.get("pii", False)
 
 
 def detect_secrets(text: str, context: Dict) -> bool:
-    return _match_any(SECRET_PATTERNS, text)
+    llm = context.get("llm_classification", {})
+    return _match_any(SECRET_PATTERNS, text) or llm.get("secrets", False)
 
 
 def detect_policy_violation(text: str, context: Dict) -> bool:
-    return _match_any(POLICY_VIOLATION, text)
+    llm = context.get("llm_classification", {})
+    return _match_any(POLICY_VIOLATION, text) or llm.get("policy_violation", False)
 
 
 def detect_exfiltration(text: str, context: Dict) -> bool:
@@ -82,14 +87,17 @@ def detect_exfiltration(text: str, context: Dict) -> bool:
     if "CONFIDENTIAL" in labels and _match_any(EXFIL_PATTERNS, text):
         return True
     matcher = SemanticMatcher.from_env()
-    return _match_any(EXFIL_PATTERNS, text) or matcher.match("exfiltration", text)
+    llm = context.get("llm_classification", {})
+    return _match_any(EXFIL_PATTERNS, text) or matcher.match("exfiltration", text) or llm.get("exfiltration", False)
 
 
 def detect_goal_hijack(text: str, context: Dict) -> bool:
     matcher = SemanticMatcher.from_env()
-    return _match_any(GOAL_HIJACK, text) or matcher.match("goal_hijack", text)
+    llm = context.get("llm_classification", {})
+    return _match_any(GOAL_HIJACK, text) or matcher.match("goal_hijack", text) or llm.get("goal_hijack", False)
 
 
 def detect_data_leakage(text: str, context: Dict) -> bool:
     matcher = SemanticMatcher.from_env()
-    return _match_any(DATA_LEAKAGE, text) or matcher.match("data_leakage", text)
+    llm = context.get("llm_classification", {})
+    return _match_any(DATA_LEAKAGE, text) or matcher.match("data_leakage", text) or llm.get("data_leakage", False)

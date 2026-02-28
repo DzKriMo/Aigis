@@ -1,69 +1,71 @@
-﻿policies:
-  - id: block_prompt_injection
-    stage: prellm
-    match:
-      any:
-        - detector: prompt_injection
-        - detector: jailbreak
-        - semantic:
-            category: prompt_injection
-            threshold: 0.62
-    action: block
-    message: "Prompt injection detected"
-    risk: 0.7
-
-  - id: redact_pii
-    stage: postllm
-    match:
-      any:
-        - detector: pii
-    action: redact
-    redaction: "[REDACTED]"
-    risk: 0.4
-
-  - id: block_secrets
-    stage: postllm
-    match:
-      any:
-        - detector: secrets
-        - detector: exfiltration
-    action: block
-    message: "Secrets or exfiltration detected"
-    risk: 0.9
-
-  - id: warn_policy_violation
-    stage: prellm
-    match:
-      any:
-        - detector: policy_violation
-    action: warn
-    message: "Possible policy violation"
-    risk: 0.5
-
-  - id: approval_for_confidential
-    stage: postllm
-    match:
-      any:
-        - label: CONFIDENTIAL
-    action: approve
-    message: "CONFIDENTIAL output requires approval"
-    risk: 0.8
-
-  - id: block_tool_shell_prod
-    stage: tool_pre
-    match:
-      any:
-        - regex: "shell"
-        - environment: prod
-    action: block
-    message: "Shell tool blocked by policy"
-    risk: 0.9
-
-  - id: block_tool_secret_result
-    stage: tool_post
-    match:
-      any:
-        - detector: secrets
-    action: block
-    message: "Tool result contains secrets"
-    risk: 0.9
+policies:
+- id: block_prompt_injection
+  stage: prellm
+  match:
+    any:
+    - detector: prompt_injection
+    - detector: jailbreak
+    - semantic:
+        category: prompt_injection
+        threshold: 0.62
+  action: block
+  message: Prompt injection detected
+  risk: 0.7
+- id: redact_pii
+  stage: postllm
+  match:
+    any:
+    - detector: pii
+  action: redact
+  redaction: '[REDACTED]'
+  risk: 0.4
+- id: block_secrets
+  stage: postllm
+  match:
+    any:
+    - detector: secrets
+    - detector: exfiltration
+  action: block
+  message: Secrets or exfiltration detected
+  risk: 0.9
+- id: warn_policy_violation
+  stage: prellm
+  match:
+    any:
+    - detector: policy_violation
+  action: warn
+  message: Possible policy violation
+  risk: 0.5
+- id: approval_for_confidential
+  stage: postllm
+  match:
+    any:
+    - label: CONFIDENTIAL
+  action: approve
+  message: CONFIDENTIAL output requires approval
+  risk: 0.8
+- id: block_tool_shell_prod
+  stage: tool_pre
+  match:
+    any:
+    - regex: shell
+    - environment: prod
+  action: block
+  message: Shell tool blocked by policy
+  risk: 0.9
+- id: block_tool_secret_result
+  stage: tool_post
+  match:
+    any:
+    - detector: secrets
+  action: block
+  message: Tool result contains secrets
+  risk: 0.9
+- id: approve_shell_tool
+  stage: tool_pre
+  match:
+    any:
+    - regex: shell
+  action: approve
+  message: Shell tool requires approval
+  risk: 0.6
