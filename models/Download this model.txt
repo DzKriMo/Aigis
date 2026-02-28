@@ -1,0 +1,4 @@
+qwen2.5-3b-instruct-q4_k_m.gguf
+
+pip install -U huggingface_hub
+huggingface-cli download Qwen/Qwen2.5-3B-Instruct-GGUF qwen2.5-3b-instruct-q5_k_m.gguf --local-dir . --local-dir-use-symlinks False
