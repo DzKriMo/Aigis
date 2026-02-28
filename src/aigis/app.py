@@ -6,7 +6,10 @@ import json
 from .api.routes import router
 from .api.dashboard import router as dashboard_router
 from .api.health import router as health_router
+from .api.auth import router as auth_router
 from .config import settings
+from .storage.db import init_db
+from .telemetry.otel import init_otel
 
 app = FastAPI(title="Aigis", version="0.1.0")
 
@@ -18,6 +21,11 @@ app.add_middleware(
     allow_methods=["*"] ,
     allow_headers=["*"],
 )
+
+@app.on_event("startup")
+def startup():
+    init_db()
+    init_otel()
 
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
@@ -36,3 +44,4 @@ async def log_requests(request: Request, call_next):
 app.include_router(router, prefix="/v1")
 app.include_router(dashboard_router, prefix="/v1")
 app.include_router(health_router, prefix="/v1")
+app.include_router(auth_router, prefix="/v1")

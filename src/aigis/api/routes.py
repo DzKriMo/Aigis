@@ -6,13 +6,15 @@ from typing import List, Dict, Any, Optional
 from ..auth.api_key import require_api_key
 from ..runtime.runner import GuardedRuntime
 from ..storage.store import InMemoryStore
+from ..storage.db_store import DbStore
+from ..config import settings
 from ..policies.loader import save_policies
 from ..storage.registry import save_policies_to_db, save_tool_policies_to_db, load_tool_policies_from_db
 from ..runtime.tool_registry import get_all_tool_policies
-from ..config import settings
 
 router = APIRouter()
-store = InMemoryStore()
+
+store = DbStore() if settings.aigis_db_enabled else InMemoryStore()
 runtime = GuardedRuntime(store=store)
 
 class CreateSessionResponse(BaseModel):
@@ -144,8 +146,7 @@ def get_policies():
 def update_policies(req: PolicyUpdateRequest):
     if settings.aigis_db_enabled:
         try:
-            from ..storage.db import run_async
-            run_async(save_policies_to_db(req.policies))
+            save_policies_to_db(req.policies)
         except Exception as exc:
             raise HTTPException(status_code=500, detail=f"DB save failed: {exc}")
     else:
@@ -157,8 +158,7 @@ def update_policies(req: PolicyUpdateRequest):
 def get_tool_policies():
     if settings.aigis_db_enabled:
         try:
-            from ..storage.db import run_async
-            tools = run_async(load_tool_policies_from_db())
+            tools = load_tool_policies_from_db()
             return {"tools": tools}
         except Exception as exc:
             raise HTTPException(status_code=500, detail=f"DB load failed: {exc}")
@@ -177,8 +177,7 @@ def update_tool_policies(req: ToolPoliciesUpdateRequest):
     if not settings.aigis_db_enabled:
         raise HTTPException(status_code=501, detail="Tool policy editing requires DB")
     try:
-        from ..storage.db import run_async
-        run_async(save_tool_policies_to_db(req.tools))
+        save_tool_policies_to_db(req.tools)
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"DB save failed: {exc}")
     return {"ok": True, "count": len(req.tools)}

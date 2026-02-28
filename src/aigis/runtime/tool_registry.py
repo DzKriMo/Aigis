@@ -1,10 +1,9 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Dict, List, Optional
 
 from ..config import settings
-from ..storage.db import run_async
 from ..storage.registry import load_tool_policies_from_db
 
 
@@ -50,7 +49,7 @@ _TOOLS: Dict[str, ToolPolicy] = {
 def get_tool_policy(name: str) -> Optional[ToolPolicy]:
     if settings.aigis_db_enabled:
         try:
-            db_tools = run_async(load_tool_policies_from_db())
+            db_tools = load_tool_policies_from_db()
             if name in db_tools:
                 t = db_tools[name]
                 return ToolPolicy(

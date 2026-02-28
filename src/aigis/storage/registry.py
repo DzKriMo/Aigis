@@ -1,20 +1,17 @@
-from __future__ import annotations
-
-import json
-from typing import List, Dict, Any, Optional
-
+﻿import json
+from typing import List, Dict, Any
 from sqlalchemy import select, delete
 
 from .db import get_session
 from .models import PolicyRecord, ToolPolicyRecord
 
 
-async def load_policies_from_db() -> List[Dict[str, Any]]:
-    session = await get_session()
-    if session is None:
+def load_policies_from_db() -> List[Dict[str, Any]]:
+    s = get_session()
+    if s is None:
         return []
-    async with session as s:
-        rows = (await s.execute(select(PolicyRecord).where(PolicyRecord.enabled == True))).scalars().all()
+    rows = s.execute(select(PolicyRecord).where(PolicyRecord.enabled == True)).scalars().all()
+    s.close()
     policies = []
     for row in rows:
         policies.append({
@@ -27,12 +24,12 @@ async def load_policies_from_db() -> List[Dict[str, Any]]:
     return policies
 
 
-async def load_tool_policies_from_db() -> Dict[str, Dict[str, Any]]:
-    session = await get_session()
-    if session is None:
+def load_tool_policies_from_db() -> Dict[str, Dict[str, Any]]:
+    s = get_session()
+    if s is None:
         return {}
-    async with session as s:
-        rows = (await s.execute(select(ToolPolicyRecord))).scalars().all()
+    rows = s.execute(select(ToolPolicyRecord)).scalars().all()
+    s.close()
     tools: Dict[str, Dict[str, Any]] = {}
     for row in rows:
         tools[row.name] = {
@@ -44,36 +41,36 @@ async def load_tool_policies_from_db() -> Dict[str, Dict[str, Any]]:
     return tools
 
 
-async def save_policies_to_db(policies: List[Dict[str, Any]]):
-    session = await get_session()
-    if session is None:
+def save_policies_to_db(policies: List[Dict[str, Any]]):
+    s = get_session()
+    if s is None:
         return
-    async with session as s:
-        async with s.begin():
-            await s.execute(delete(PolicyRecord))
-            for p in policies:
-                s.add(PolicyRecord(
-                    name=p.get("id", "unnamed"),
-                    stage=p.get("stage", ""),
-                    action=p.get("action", ""),
-                    match_json=json.dumps(p.get("match", {})),
-                    risk=str(p.get("risk", "")) if p.get("risk") is not None else None,
-                    enabled=True,
-                ))
+    s.execute(delete(PolicyRecord))
+    for p in policies:
+        s.add(PolicyRecord(
+            name=p.get("id", "unnamed"),
+            stage=p.get("stage", ""),
+            action=p.get("action", ""),
+            match_json=json.dumps(p.get("match", {})),
+            risk=str(p.get("risk", "")) if p.get("risk") is not None else None,
+            enabled=True,
+        ))
+    s.commit()
+    s.close()
 
 
-async def save_tool_policies_to_db(policies: Dict[str, Dict[str, Any]]):
-    session = await get_session()
-    if session is None:
+def save_tool_policies_to_db(policies: Dict[str, Dict[str, Any]]):
+    s = get_session()
+    if s is None:
         return
-    async with session as s:
-        async with s.begin():
-            await s.execute(delete(ToolPolicyRecord))
-            for name, p in policies.items():
-                s.add(ToolPolicyRecord(
-                    name=name,
-                    allowed_envs=json.dumps(p.get("allowed_envs", [])),
-                    allowlist=json.dumps(p.get("allowlist", [])),
-                    timeout_seconds=int(p.get("timeout_seconds", 5)),
-                    max_bytes=p.get("max_bytes"),
-                ))
+    s.execute(delete(ToolPolicyRecord))
+    for name, p in policies.items():
+        s.add(ToolPolicyRecord(
+            name=name,
+            allowed_envs=json.dumps(p.get("allowed_envs", [])),
+            allowlist=json.dumps(p.get("allowlist", [])),
+            timeout_seconds=int(p.get("timeout_seconds", 5)),
+            max_bytes=p.get("max_bytes"),
+        ))
+    s.commit()
+    s.close()

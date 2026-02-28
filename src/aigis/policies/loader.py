@@ -1,13 +1,13 @@
 ﻿import os
 import yaml
 from ..config import settings
-from ..storage.db import run_async
 from ..storage.registry import load_policies_from_db
 
 
 def _resolve_path(path: str) -> str:
     if os.path.isabs(path):
         return path
+    # project root = .../Aigis
     base = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
     return os.path.join(base, path)
 
@@ -15,7 +15,7 @@ def _resolve_path(path: str) -> str:
 def load_policies():
     if settings.aigis_db_enabled:
         try:
-            policies = run_async(load_policies_from_db())
+            policies = load_policies_from_db()
             if policies:
                 return policies
         except Exception:

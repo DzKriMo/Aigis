@@ -1,31 +1,33 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
-import asyncio
-from typing import Optional
-
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from ..config import settings
+from .models import Base
 
 _ENGINE = None
-_SESSION_FACTORY = None
+_SESSION = None
 
 
-def _ensure_engine():
-    global _ENGINE, _SESSION_FACTORY
-    if _ENGINE is not None:
-        return
-    _ENGINE = create_async_engine(settings.database_url, echo=False)
-    _SESSION_FACTORY = sessionmaker(_ENGINE, class_=AsyncSession, expire_on_commit=False)
+def get_engine():
+    global _ENGINE, _SESSION
+    if _ENGINE is None:
+        _ENGINE = create_engine(settings.database_url, echo=False, future=True)
+        _SESSION = sessionmaker(bind=_ENGINE)
+    return _ENGINE
 
 
-async def get_session() -> Optional[AsyncSession]:
+def get_session():
     if not settings.aigis_db_enabled:
         return None
-    _ensure_engine()
-    return _SESSION_FACTORY()
+    if _SESSION is None:
+        get_engine()
+    return _SESSION()
 
 
-def run_async(coro):
-    return asyncio.run(coro)
+def init_db():
+    if not settings.aigis_db_enabled:
+        return
+    engine = get_engine()
+    Base.metadata.create_all(engine)

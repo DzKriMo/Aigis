@@ -4,6 +4,7 @@ from typing import List, Dict, Any, Optional
 from ..policies.engine import PolicyEngine
 from ..policies.loader import load_policies
 from ..detectors.registry import DetectorRegistry
+from ..detectors.llm_client import classify_text
 from ..prellm.normalize import normalize_text
 from ..prellm.network import evaluate_urls
 from ..postllm.approval import approval_hash
@@ -60,7 +61,17 @@ class GuardedRuntime:
                 "flags": norm_flags,
             })
 
-        # 1) pre-LLM network firewall (if URLs provided)
+        # 1) LLM classification (always log for visibility)
+        llm_cls = classify_text(normalized)
+        context["llm_classification"] = llm_cls
+        self.store.log_event(session_id, {
+            "stage": "llm_classification",
+            "scope": "input",
+            "content": normalized,
+            "classification": llm_cls,
+        })
+
+        # 2) pre-LLM network firewall (if URLs provided)
         if urls:
             net_decision = evaluate_urls(urls, allowlist=url_allowlist, denylist=url_denylist)
             self.store.log_event(session_id, {
@@ -78,7 +89,7 @@ class GuardedRuntime:
                     metadata={},
                 )
 
-        # 2) policy evaluate input
+        # 3) policy evaluate input
         decision = self.policy_engine.evaluate(normalized, stage="prellm", detectors=self.detectors, context=context)
         self.store.log_event(session_id, {
             "stage": "prellm",
@@ -107,10 +118,10 @@ class GuardedRuntime:
                     metadata={},
                 )
 
-        # 3) placeholder model response
+        # 4) placeholder model response
         model_output = f"Echo: {normalized}"
 
-        # 4) post-LLM policy evaluate
+        # 5) post-LLM policy evaluate
         out_decision = self.policy_engine.evaluate(model_output, stage="postllm", detectors=self.detectors, context=context)
         self.store.log_event(session_id, {
             "stage": "postllm",

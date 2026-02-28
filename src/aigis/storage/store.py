@@ -1,4 +1,5 @@
 ﻿from typing import Dict, Any
+import time
 
 from ..telemetry.collector import emit
 
@@ -17,6 +18,8 @@ class InMemoryStore:
         return session_id in self.sessions
 
     def log_event(self, session_id: str, event: Dict[str, Any]):
+        if "ts" not in event:
+            event["ts"] = time.time()
         self.sessions[session_id]["events"].append(event)
         emit({"session_id": session_id, **event})
 
