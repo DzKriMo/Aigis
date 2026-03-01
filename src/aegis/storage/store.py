@@ -1,7 +1,9 @@
 ﻿from typing import Dict, Any
 import time
+from datetime import datetime, timezone
 
 from ..telemetry.collector import emit
+
 
 class InMemoryStore:
     def __init__(self):
@@ -20,6 +22,10 @@ class InMemoryStore:
     def log_event(self, session_id: str, event: Dict[str, Any]):
         if "ts" not in event:
             event["ts"] = time.time()
+
+        # Human-friendly timestamp for logs and API consumers.
+        event["ts_readable"] = datetime.fromtimestamp(float(event["ts"]), tz=timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+
         self.sessions[session_id]["events"].append(event)
         emit({"session_id": session_id, **event})
 

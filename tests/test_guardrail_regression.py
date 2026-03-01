@@ -1,4 +1,4 @@
-import os
+﻿import os
 import sys
 import unittest
 from pathlib import Path
@@ -40,6 +40,14 @@ class GuardrailRegressionTests(unittest.TestCase):
                     )
                     for action in case.get("expected_actions", []):
                         self.assertIn(action, result.actions)
+                    for action in case.get("expected_not_actions", []):
+                        self.assertNotIn(action, result.actions)
+                    if "expected_risk_min" in case:
+                        self.assertGreaterEqual(result.risk_score, float(case["expected_risk_min"]))
+
+                    session = self.runtime.store.get_session(self.session_id)
+                    self.assertTrue(session.get("events"))
+                    self.assertIn("ts_readable", session["events"][-1])
                 elif kind == "policy_eval":
                     decision = self.engine.evaluate(
                         text=case["content"],

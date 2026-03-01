@@ -1,16 +1,24 @@
-policies:
-- id: block_prompt_injection
+﻿policies:
+- id: block_goal_hijack
+  stage: prellm
+  match:
+    any:
+    - detector: goal_hijack
+    - detector: jailbreak
+    - semantic:
+        category: goal_hijack
+        threshold: 0.62
+  action: block
+  message: Prompt injection / goal hijack detected
+  risk: 0.9
+- id: warn_prompt_injection_context
   stage: prellm
   match:
     any:
     - detector: prompt_injection
-    - detector: jailbreak
-    - semantic:
-        category: prompt_injection
-        threshold: 0.62
-  action: block
-  message: Prompt injection detected
-  risk: 0.7
+  action: warn
+  message: Prompt-injection related content detected (flagged)
+  risk: 0.4
 - id: redact_pii
   stage: postllm
   match:

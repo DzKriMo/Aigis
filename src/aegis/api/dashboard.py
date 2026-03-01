@@ -1,4 +1,4 @@
-from pathlib import Path
+﻿from pathlib import Path
 
 from fastapi import APIRouter, Response
 from fastapi.responses import FileResponse, HTMLResponse
@@ -496,11 +496,11 @@ def dashboard():
           }
 
           function normalizeTs(ts) {
-            if (!ts) return '';
+            if (!ts) return "";
             try {
-              return new Date(ts * 1000).toLocaleTimeString();
+              return new Date(ts * 1000).toLocaleString();
             } catch {
-              return '';
+              return "";
             }
           }
 
@@ -592,8 +592,10 @@ def dashboard():
               else if (val === true) clsName += ' warn';
               return `<span class="${clsName}">${k}${val === true ? ':true' : ''}</span>`;
             });
-            el.innerHTML = tags.join(' ');
-            timeEl.textContent = latest.ts ? 'LLM time: ' + normalizeTs(latest.ts) : '';
+            const hasAlerts = Object.keys(cls).some(k => !k.startsWith('__') && cls[k] === true);
+            el.innerHTML = (hasAlerts ? '<span class="pill warn">!!</span> ' : '') + tags.join(' ');
+            const llmTs = latest.ts_readable || normalizeTs(latest.ts);
+            timeEl.textContent = llmTs ? "LLM time: " + llmTs : "";
             if (cls.__error__) {
               errEl.textContent = 'LLM error: ' + cls.__error__;
             } else if (cls.__raw__) {
@@ -625,9 +627,16 @@ def dashboard():
               div.className = 'event';
               const d = e.decision || {};
               let tag = '<span class="tag ok">ok</span>';
-              if (d.blocked) tag = '<span class="tag block">block</span>';
+              if (e.stage === 'llm_classification') {
+                const cls = e.classification || {};
+                const llmErr = Boolean(cls.__error__);
+                const llmPositive = Object.keys(cls).some(k => !k.startsWith('__') && cls[k] === true);
+                if (llmErr) tag = '<span class="tag block">llm error</span>';
+                else if (llmPositive) tag = '<span class="tag warn">llm !!</span>';
+                else tag = '<span class="tag ok">llm ok</span>';
+              } else if (d.blocked) tag = '<span class="tag block">block</span>';
               else if (d.warn || d.require_approval) tag = '<span class="tag warn">warn</span>';
-              const time = normalizeTs(e.ts);
+              const time = e.ts_readable || normalizeTs(e.ts);
               const preId = `ev_${idx}`;
 
               div.innerHTML = `
@@ -741,3 +750,5 @@ def dashboard():
     </html>
     """
     return HTMLResponse(html_doc)
+
+

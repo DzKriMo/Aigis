@@ -1,5 +1,6 @@
 ﻿import json
 import time
+from datetime import datetime, timezone
 from typing import Dict, Any
 
 from ..telemetry.collector import emit
@@ -31,6 +32,10 @@ class DbStore:
     def log_event(self, session_id: str, event: Dict[str, Any]):
         if "ts" not in event:
             event["ts"] = time.time()
+
+        # Human-friendly timestamp for logs and API consumers.
+        event["ts_readable"] = datetime.fromtimestamp(float(event["ts"]), tz=timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+
         emit({"session_id": session_id, **event})
         s = get_session()
         if s is None:

@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+﻿from dataclasses import dataclass
 from typing import List, Dict, Any, Optional
 
 from ..policies.engine import PolicyEngine
@@ -57,12 +57,15 @@ class GuardedRuntime:
         # 0) normalize input
         normalized, norm_flags = normalize_text(content)
         if norm_flags:
-            self.store.log_event(session_id, {
-                "stage": "prellm.normalize",
-                "content": content,
-                "normalized": normalized,
-                "flags": norm_flags,
-            })
+            self.store.log_event(
+                session_id,
+                {
+                    "stage": "prellm.normalize",
+                    "content": content,
+                    "normalized": normalized,
+                    "flags": norm_flags,
+                },
+            )
 
         # 1) LLM classification (always log for visibility)
         try:
@@ -80,21 +83,27 @@ class GuardedRuntime:
             llm_cls = {"__error__": str(exc)}
 
         context["llm_classification"] = llm_cls
-        self.store.log_event(session_id, {
-            "stage": "llm_classification",
-            "scope": "input",
-            "content": normalized,
-            "classification": llm_cls,
-        })
+        self.store.log_event(
+            session_id,
+            {
+                "stage": "llm_classification",
+                "scope": "input",
+                "content": normalized,
+                "classification": llm_cls,
+            },
+        )
 
         # 2) pre-LLM network firewall (if URLs provided)
         if urls:
             net_decision = evaluate_urls(urls, allowlist=url_allowlist, denylist=url_denylist)
-            self.store.log_event(session_id, {
-                "stage": "prellm.network",
-                "urls": urls,
-                "decision": net_decision.to_dict(),
-            })
+            self.store.log_event(
+                session_id,
+                {
+                    "stage": "prellm.network",
+                    "urls": urls,
+                    "decision": net_decision.to_dict(),
+                },
+            )
             if net_decision.blocked:
                 return RuntimeResult(
                     output=net_decision.message or "Blocked",
@@ -107,11 +116,14 @@ class GuardedRuntime:
 
         # 3) policy evaluate input
         decision = self.policy_engine.evaluate(normalized, stage="prellm", detectors=self.detectors, context=context)
-        self.store.log_event(session_id, {
-            "stage": "prellm",
-            "content": normalized,
-            "decision": decision.to_dict(),
-        })
+        self.store.log_event(
+            session_id,
+            {
+                "stage": "prellm",
+                "content": normalized,
+                "decision": decision.to_dict(),
+            },
+        )
         if decision.blocked:
             return RuntimeResult(
                 output=decision.message or "Blocked",
@@ -134,26 +146,37 @@ class GuardedRuntime:
                     metadata={},
                 )
 
+        pre_actions = [a for a in decision.actions() if a not in {"block", "require_approval"}]
+        pre_risk = decision.risk_score
+        pre_message = decision.message
+
         # 4) placeholder model response
         model_output = f"Echo: {normalized}"
 
         # 5) post-LLM policy evaluate
         out_decision = self.policy_engine.evaluate(model_output, stage="postllm", detectors=self.detectors, context=context)
-        self.store.log_event(session_id, {
-            "stage": "postllm",
-            "content": model_output,
-            "decision": out_decision.to_dict(),
-        })
+        self.store.log_event(
+            session_id,
+            {
+                "stage": "postllm",
+                "content": model_output,
+                "decision": out_decision.to_dict(),
+            },
+        )
+
+        combined_risk = pre_risk + out_decision.risk_score
+        combined_message = out_decision.message or pre_message
 
         if out_decision.require_approval:
             h = approval_hash(stage="postllm", content=model_output, context=context)
             if not self.store.is_approved(session_id, h):
                 self.store.add_pending_approval(session_id, h)
+                combined_actions = list(dict.fromkeys(pre_actions + ["require_approval"]))
                 return RuntimeResult(
                     output=out_decision.message or "Approval required",
-                    actions=["require_approval"],
-                    risk_score=out_decision.risk_score,
-                    message=out_decision.message,
+                    actions=combined_actions,
+                    risk_score=combined_risk,
+                    message=combined_message,
                     approval_hash=h,
                     metadata={},
                 )
@@ -161,8 +184,8 @@ class GuardedRuntime:
             return RuntimeResult(
                 output=out_decision.message or "Blocked",
                 actions=["block"],
-                risk_score=out_decision.risk_score,
-                message=out_decision.message,
+                risk_score=combined_risk,
+                message=combined_message,
                 approval_hash=None,
                 metadata={},
             )
@@ -171,12 +194,12 @@ class GuardedRuntime:
         if out_decision.modified_text is not None:
             output = out_decision.modified_text
 
-        actions = out_decision.actions()
+        actions = list(dict.fromkeys(pre_actions + out_decision.actions()))
         return RuntimeResult(
             output=output,
             actions=actions,
-            risk_score=out_decision.risk_score,
-            message=out_decision.message,
+            risk_score=combined_risk,
+            message=combined_message,
             approval_hash=None,
             metadata={},
         )
@@ -212,12 +235,15 @@ class GuardedRuntime:
             detectors=self.detectors,
             context=context,
         )
-        self.store.log_event(session_id, {
-            "stage": "tool_pre",
-            "tool": tool_name,
-            "payload": payload,
-            "decision": pre_decision.to_dict(),
-        })
+        self.store.log_event(
+            session_id,
+            {
+                "stage": "tool_pre",
+                "tool": tool_name,
+                "payload": payload,
+                "decision": pre_decision.to_dict(),
+            },
+        )
         if pre_decision.blocked:
             return {
                 "allowed": False,
@@ -252,13 +278,16 @@ class GuardedRuntime:
                     "result": None,
                 }
             raise
-        self.store.log_event(session_id, {
-            "stage": "tool_exec",
-            "tool": tool_name,
-            "payload": payload,
-            "allowed": result.allowed,
-            "message": result.message,
-        })
+        self.store.log_event(
+            session_id,
+            {
+                "stage": "tool_exec",
+                "tool": tool_name,
+                "payload": payload,
+                "allowed": result.allowed,
+                "message": result.message,
+            },
+        )
 
         post_decision = self.policy_engine.evaluate(
             text=f"{tool_name}:{result.result}",
@@ -266,12 +295,15 @@ class GuardedRuntime:
             detectors=self.detectors,
             context=context,
         )
-        self.store.log_event(session_id, {
-            "stage": "tool_post",
-            "tool": tool_name,
-            "result": result.result,
-            "decision": post_decision.to_dict(),
-        })
+        self.store.log_event(
+            session_id,
+            {
+                "stage": "tool_post",
+                "tool": tool_name,
+                "result": result.result,
+                "decision": post_decision.to_dict(),
+            },
+        )
         if post_decision.blocked:
             return {
                 "allowed": False,
