@@ -1,11 +1,11 @@
-﻿import json
+import json
 import os
 import yaml
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from aigis.storage.models import Base, PolicyRecord, ToolPolicyRecord
-from aigis.runtime.tool_registry import _TOOLS
+from aegis.storage.models import Base, PolicyRecord, ToolPolicyRecord
+from aegis.runtime.tool_registry import _TOOLS
 
 
 def main():

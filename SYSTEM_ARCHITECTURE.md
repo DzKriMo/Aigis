@@ -1,6 +1,6 @@
-﻿# Aigis — System Architecture (Detailed)
+# Aegis — System Architecture (Detailed)
 
-This document explains the Aigis guardrail runtime in precise, boring detail.
+This document explains the Aegis guardrail runtime in precise, boring detail.
 
 ---
 
@@ -19,7 +19,7 @@ At each stage, **policies** are evaluated against **detectors**. The result is a
 
 ## 2. Core Components
 
-### 2.1 Policy Engine (`src/aigis/policies/engine.py`)
+### 2.1 Policy Engine (`src/aegis/policies/engine.py`)
 - Loads policy rules from YAML or DB.
 - Each rule contains:
   - `stage` (prellm, postllm, tool_pre, tool_post)
@@ -31,7 +31,7 @@ At each stage, **policies** are evaluated against **detectors**. The result is a
 ### 2.2 Detectors
 Detectors return boolean signals used by the policy engine.
 
-#### a) Regex + heuristics (`src/aigis/detectors/simple.py`)
+#### a) Regex + heuristics (`src/aegis/detectors/simple.py`)
 - Prompt injection
 - Jailbreak
 - Secrets / PII
@@ -40,12 +40,12 @@ Detectors return boolean signals used by the policy engine.
 #### b) Semantic (optional)
 - Small embedding model for similarity matching
 
-#### c) LLM classifier (`src/aigis/detectors/llm_client.py`)
+#### c) LLM classifier (`src/aegis/detectors/llm_client.py`)
 - Uses local llama.cpp server to classify content
 - Returns structured JSON flags
 - Results are logged as `llm_classification` events
 
-### 2.3 Runtime (`src/aigis/runtime/runner.py`)
+### 2.3 Runtime (`src/aegis/runtime/runner.py`)
 The runtime is the orchestrator.
 
 Steps for a user message:
@@ -61,7 +61,7 @@ Steps for a tool call:
 2. Run tool sandbox wrappers
 3. Evaluate policies (`tool_post`)
 
-### 2.4 Tool Guard (`src/aigis/runtime/tool_router.py`)
+### 2.4 Tool Guard (`src/aegis/runtime/tool_router.py`)
 - Applies allow/deny list
 - Blocks dangerous shell commands
 - Restricts filesystem access to a root path
@@ -79,13 +79,13 @@ Each event is stored with:
 - decision output
 - timestamp
 
-### 2.6 Auth (`src/aigis/auth/`)
+### 2.6 Auth (`src/aegis/auth/`)
 - API key required for all endpoints
 - Optional JWT issuance:
   - `POST /v1/auth/token`
   - token valid for configured TTL
 
-### 2.7 Telemetry (`src/aigis/telemetry/`)
+### 2.7 Telemetry (`src/aegis/telemetry/`)
 - Each event is emitted in structured JSON
 - Optional OpenTelemetry exporter
 
@@ -94,11 +94,11 @@ Each event is stored with:
 ## 3. Database Schema (SQLite/Postgres)
 
 Tables:
-- `aigis_sessions` — session IDs
-- `aigis_events` — event logs per session
-- `aigis_policies` — policy rules
-- `aigis_tool_policies` — tool policy metadata
-- `aigis_api_keys` / `aigis_tenants` — auth metadata
+- `aegis_sessions` — session IDs
+- `aegis_events` — event logs per session
+- `aegis_policies` — policy rules
+- `aegis_tool_policies` — tool policy metadata
+- `aegis_api_keys` / `aegis_tenants` — auth metadata
 
 ---
 

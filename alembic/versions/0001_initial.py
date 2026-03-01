@@ -1,4 +1,4 @@
-﻿"""initial
+"""initial
 
 Revision ID: 0001_initial
 Revises: 
@@ -16,7 +16,7 @@ depends_on = None
 
 def upgrade():
     op.create_table(
-        "aigis_policies",
+        "aegis_policies",
         sa.Column("id", sa.Integer, primary_key=True),
         sa.Column("name", sa.String(length=128), nullable=False),
         sa.Column("stage", sa.String(length=32), nullable=False),
@@ -27,7 +27,7 @@ def upgrade():
     )
 
     op.create_table(
-        "aigis_tool_policies",
+        "aegis_tool_policies",
         sa.Column("id", sa.Integer, primary_key=True),
         sa.Column("name", sa.String(length=64), nullable=False, unique=True),
         sa.Column("allowed_envs", sa.Text, nullable=True),
@@ -38,5 +38,5 @@ def upgrade():
 
 
 def downgrade():
-    op.drop_table("aigis_tool_policies")
-    op.drop_table("aigis_policies")
+    op.drop_table("aegis_tool_policies")
+    op.drop_table("aegis_policies")

@@ -1,6 +1,6 @@
-﻿# Contributing
+# Contributing
 
-Thanks for your interest in improving Aigis.
+Thanks for your interest in improving Aegis.
 
 ## Setup
 - Install Python 3.10+

@@ -1,10 +1,14 @@
-﻿# Aigis — Agent Guardrail Runtime (Demo-Ready)
+﻿# Aegis — Agent Guardrail Runtime (Demo-Ready)
+
+<p align="center">
+  <img src="logo.png" alt="Aegis Logo" width="220"/>
+</p>
 
 ![Status](https://img.shields.io/badge/status-demo--ready-brightgreen)
 ![Python](https://img.shields.io/badge/python-3.10%2B-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
-Aigis is a Python-based agent guardrail runtime that enforces policies across **user input**, **tool calls**, **tool results**, and **model output**. It includes a web dashboard, JWT auth, database-backed event storage, and optional local LLM classification via llama.cpp.
+Aegis is a Python-based agent guardrail runtime that enforces policies across **user input**, **tool calls**, **tool results**, and **model output**. It includes a web dashboard, JWT auth, database-backed event storage, and optional local LLM classification via llama.cpp.
 
 > This repository is a **demo-ready** implementation for coursework and presentations.
 
@@ -15,6 +19,7 @@ Aigis is a Python-based agent guardrail runtime that enforces policies across **
 - **Pre-LLM firewall**: prompt injection, jailbreak, goal hijack, normalization, network URL firewall
 - **Post-LLM firewall**: secrets/PII redaction, exfiltration blocking, approvals
 - **Tool guardrails**: allow/deny, environment restrictions, sandboxed execution
+- **Fail-closed mode**: blocks on policy/classification errors when enabled
 - **LLM-based classification** (local): llama.cpp sidecar + Qwen2.5-3B GGUF
 - **JWT + API key auth**
 - **Database persistence** (SQLite default)
@@ -26,8 +31,8 @@ Aigis is a Python-based agent guardrail runtime that enforces policies across **
 ## Project Structure
 
 ```
-Aigis/
-  src/aigis/
+Aegis/
+  src/aegis/
     api/            # FastAPI endpoints (sessions, auth, dashboard)
     auth/           # API key + JWT, rate limiting
     detectors/      # regex/semantic + LLM classifiers
@@ -44,7 +49,7 @@ Aigis/
 ## Quickstart (Local, CPU)
 
 ```powershell
-python.exe -m uvicorn aigis.api.main:app --port 8000
+python.exe -m uvicorn aegis.api.main:app --port 8000
 ```
 
 Dashboard:
@@ -56,19 +61,22 @@ http://127.0.0.1:8000/v1/dashboard
 
 ## Enable Local LLM Classification (llama.cpp)
 
-1) Start llama.cpp server (GPU suggested):
+1) Put llama.cpp binaries in `Aegis\llama.cpp` (already set up in this workspace).
+
+2) Start both llama.cpp + Aegis API (dashboard included):
 ```powershell
-llama-server.exe \
-  -m Aigis\models\qwen2.5-3b-instruct-q4_k_m.gguf \
-  --port 8080 --n-gpu-layers 35 --ctx-size 2048
+.\scripts\start_demo.ps1
 ```
 
-2) Start API with LLM enabled:
+3) Manual launch option:
 ```powershell
-$env:AIGIS_LLM_ENABLED="true"
-$env:AIGIS_LLM_ENDPOINT="http://127.0.0.1:8080/v1/chat/completions"
-$env:AIGIS_LLM_MODEL="qwen2.5-3b-instruct"
-python.exe -m uvicorn aigis.api.main:app --port 8000
+.\llama.cpp\llama-server.exe \
+  -m models\qwen2.5-3b-instruct-q4_k_m.gguf \
+  --port 8080 --n-gpu-layers 35 --ctx-size 2048
+$env:AEGIS_LLM_ENABLED="true"
+$env:AEGIS_LLM_ENDPOINT="http://127.0.0.1:8080/v1/chat/completions"
+$env:AEGIS_LLM_MODEL="qwen2.5-3b-instruct"
+python.exe -m uvicorn aegis.api.main:app --port 8000
 ```
 
 Check LLM health:
@@ -81,7 +89,7 @@ Invoke-WebRequest -Uri "http://127.0.0.1:8000/v1/llm/ping" -Headers @{ "x-api-ke
 ## Demo Script
 
 ```powershell
-python.exe C:\Users\krimo\OneDrive\Desktop\Aigis\scripts\demo_cli.py
+python.exe scripts\demo_cli.py
 ```
 
 ---
@@ -102,13 +110,35 @@ Invoke-WebRequest -Uri "http://127.0.0.1:8000/v1/auth/token" -Headers @{ "x-api-
 
 Edit `.env`:
 ```
-AIGIS_API_KEY=changeme
-AIGIS_LLM_ENABLED=true
-AIGIS_LLM_ENDPOINT=http://127.0.0.1:8080/v1/chat/completions
-AIGIS_LLM_MODEL=qwen2.5-3b-instruct
-AIGIS_DB_ENABLED=true
-DATABASE_URL=sqlite:///aigis.db
+AEGIS_API_KEY=changeme
+AEGIS_FAIL_CLOSED=false
+AEGIS_CORS_ORIGINS=*
+AEGIS_RATE_LIMIT_BACKEND=memory
+AEGIS_LLM_ENABLED=true
+AEGIS_LLM_ENDPOINT=http://127.0.0.1:8080/v1/chat/completions
+AEGIS_LLM_MODEL=qwen2.5-3b-instruct
+AEGIS_DB_ENABLED=true
+DATABASE_URL=sqlite:///aegis.db
 ```
+
+Production baseline:
+```powershell
+Copy-Item .env.production.example .env
+```
+In production (`AEGIS_ENV=prod`), startup hardening rejects:
+- default API key / JWT secret
+- wildcard CORS (`*`)
+- memory-backed rate limiting
+- fail-open mode
+
+## Guardrail Regression Tests
+
+```powershell
+python -m unittest discover -s tests -p "test_*.py" -v
+```
+
+CI enforcement is configured in:
+- `.github/workflows/guardrail-regression.yml`
 
 ---
 
@@ -125,6 +155,7 @@ docker compose up --build
 - `SYSTEM_ARCHITECTURE.md` — full system walkthrough
 - `CONTRIBUTING.md` — how to contribute
 - `SECURITY.md` — security policy
+- `AGENT_INTEGRATION_README.md` — attaching Aegis to real user agents
 
 ---
 

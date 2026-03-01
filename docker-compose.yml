@@ -1,5 +1,5 @@
-﻿services:
-  aigis:
+services:
+  aegis:
     build: .
     ports:
       - "8000:8000"
@@ -12,11 +12,11 @@
     environment:
       POSTGRES_PASSWORD: postgres
       POSTGRES_USER: postgres
-      POSTGRES_DB: aigis
+      POSTGRES_DB: aegis
     ports:
       - "5432:5432"
     volumes:
-      - aigis_db:/var/lib/postgresql/data
+      - aegis_db:/var/lib/postgresql/data
 
 volumes:
-  aigis_db:
+  aegis_db:

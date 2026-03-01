@@ -1,0 +1,33 @@
+name: Guardrail Regression
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - master
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run guardrail regression suite
+        env:
+          AEGIS_LLM_ENABLED: "false"
+          AEGIS_DB_ENABLED: "false"
+          POLICY_PATH: "config/policies.example.yaml"
+        run: |
+          python -m unittest discover -s tests -p "test_*.py" -v

@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import os
 from logging.config import fileConfig
@@ -6,7 +6,7 @@ from logging.config import fileConfig
 from sqlalchemy import engine_from_config, pool
 from alembic import context
 
-from aigis.storage.models import Base
+from aegis.storage.models import Base
 
 config = context.config
 

@@ -1,4 +1,4 @@
-﻿import os
+import os
 import sys
 
 
@@ -9,7 +9,7 @@ def main():
         print("sentence-transformers not installed. Run: pip install -r requirements-ml.txt")
         return 1
 
-    model_id = os.getenv("AIGIS_EMBED_MODEL", "sentence-transformers/all-MiniLM-L6-v2")
+    model_id = os.getenv("AEGIS_EMBED_MODEL", "sentence-transformers/all-MiniLM-L6-v2")
     print(f"Downloading model: {model_id}")
     SentenceTransformer(model_id)
     print("Done.")
